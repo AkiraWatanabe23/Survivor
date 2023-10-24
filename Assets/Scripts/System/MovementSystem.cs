@@ -22,7 +22,6 @@ public class MovementSystem
             if (_input == null && movement.gameObject.TryGetComponent(out _input))
             {
                 _player = movement.Transform;
-                movement.LatestPos = movement.Transform.position;
             }
         }
     }
@@ -55,7 +54,7 @@ public class MovementSystem
                 var direction = (_player.position - movement.Transform.position).normalized;
                 direction.y = 0;
 
-                var lookRotation = Quaternion.LookRotation(direction, Vector3.up);
+                var lookRotation = Quaternion.LookRotation(direction * movement.RotateSpeed, Vector3.up);
                 movement.Transform.rotation = lookRotation;
             }
         }
