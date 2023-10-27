@@ -488,7 +488,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d7c3684f76d3c8b409080b89a64aa94c, type: 2}
+  - {fileID: 2100000, guid: 3b433c9930c3ff94ab85151d8523ada3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -544,7 +544,7 @@ GameObject:
   - component: {fileID: 1371841417}
   - component: {fileID: 1371841418}
   m_Layer: 0
-  m_Name: MoveMain
+  m_Name: Main
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -574,9 +574,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 1371841416}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: de85404a00bba1f46aaa9e98626560d6, type: 3}
+  m_Script: {fileID: 11500000, guid: 50db374a65dc7ba4aae70e97d0dc45e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _flags:
+    _movement: 1
+    _attack: 0
+    _spawn: 0
   _movementSystem:
     _movementData:
     - {fileID: 1388336013}

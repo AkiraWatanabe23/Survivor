@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
+/// <summary> 方向転換、移動のシステム </summary>
 [Serializable]
-public class MovementSystem
+public class MovementSystem : SystemBase
 {
     [SerializeField]
     private List<MovementData> _movementData = default;
@@ -11,7 +14,11 @@ public class MovementSystem
     private InputBase _input = default;
     private Transform _player = default;
 
-    public void Initialize()
+    private readonly CancellationTokenSource _ctsLookAt = new();
+    private readonly CancellationTokenSource _ctsMovement = new();
+
+    /// <summary> 初期化処理 </summary>
+    public override async void Initialize(GameEvent gameEvent)
     {
         if (_movementData == null || _movementData.Count == 0) { return; }
 
@@ -24,16 +31,32 @@ public class MovementSystem
                 _player = movement.Transform;
             }
         }
+        Debug.Log("initialized");
+
+        var lookAtTask = LookAtAsync(_ctsLookAt.Token);
+        var movementTask = MoveAsync(_ctsMovement.Token);
+
+        await lookAtTask;
+        await movementTask;
     }
 
-    public void OnUpdate()
+    public override void OnDestroy()
     {
-        if (_movementData == null || _movementData.Count == 0) { return; }
-
-        LookAt();
-        Move();
+        _ctsLookAt?.Cancel(); _ctsLookAt?.Dispose();
+        _ctsMovement?.Cancel(); _ctsMovement?.Dispose();
     }
 
+    private async Task LookAtAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested) { LookAt(); await Task.Yield(); }
+    }
+
+    private async Task MoveAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested) { Move(); await Task.Yield(); }
+    }
+
+    /// <summary> 方向転換処理 </summary>
     private void LookAt()
     {
         foreach (var movement in _movementData) //移動ステータスを持つキャラクターの方向を動かす
@@ -60,6 +83,7 @@ public class MovementSystem
         }
     }
 
+    /// <summary> 移動処理 </summary>
     private void Move()
     {
         foreach (var movement in _movementData) //移動ステータスを持つキャラクターを動かす
@@ -79,6 +103,6 @@ public class MovementSystem
 
     private void TransformSetting(MovementData movement)
     {
-        movement.Transform = movement.transform;
+        movement.Transform = movement.gameObject.transform;
     }
 }

@@ -11,10 +11,8 @@ public class MovementData : MonoBehaviour
     [SerializeField]
     private bool _isGetInput = false;
 
-    private Transform _transform = default;
-
     public float MoveSpeed => _moveSpeed;
     public float RotateSpeed => _rotateSpeed;
     public bool IsGetInput => _isGetInput;
-    public Transform Transform { get => _transform; set => _transform = value; }
+    public Transform Transform { get; set; }
 }
