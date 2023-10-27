@@ -17,10 +17,14 @@ public class MovementSystem : SystemBase
     private readonly CancellationTokenSource _ctsLookAt = new();
     private readonly CancellationTokenSource _ctsMovement = new();
 
+    private GameEvent _gameEvent = default;
+
     /// <summary> 初期化処理 </summary>
     public override async void Initialize(GameEvent gameEvent)
     {
         if (_movementData == null || _movementData.Count == 0) { return; }
+
+        _gameEvent = gameEvent;
 
         foreach (var movement in _movementData)
         {
@@ -31,6 +35,10 @@ public class MovementSystem : SystemBase
                 _player = movement.Transform;
             }
         }
+
+        gameEvent.OnActivate += AddData;
+        gameEvent.OnDead += RemoveData;
+
         Debug.Log("initialized");
 
         var lookAtTask = LookAtAsync(_ctsLookAt.Token);
@@ -44,6 +52,9 @@ public class MovementSystem : SystemBase
     {
         _ctsLookAt?.Cancel(); _ctsLookAt?.Dispose();
         _ctsMovement?.Cancel(); _ctsMovement?.Dispose();
+
+        _gameEvent.OnActivate -= AddData;
+        _gameEvent.OnDead -= RemoveData;
     }
 
     private async Task LookAtAsync(CancellationToken token)
@@ -101,8 +112,25 @@ public class MovementSystem : SystemBase
         }
     }
 
+    private void AddData(GameObject go)
+    {
+        if (go.TryGetComponent(out MovementData movement))
+        {
+            _movementData.Add(movement);
+            TransformSetting(movement);
+        }
+    }
+
+    private void RemoveData(GameObject go)
+    {
+        if (go.TryGetComponent(out MovementData movement))
+        {
+            _movementData.Remove(movement);
+        }
+    }
+
     private void TransformSetting(MovementData movement)
     {
-        movement.Transform = movement.gameObject.transform;
+        movement.Transform ??= movement.gameObject.transform;
     }
 }
