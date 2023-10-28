@@ -17,14 +17,10 @@ public class MovementSystem : SystemBase
     private readonly CancellationTokenSource _ctsLookAt = new();
     private readonly CancellationTokenSource _ctsMovement = new();
 
-    private GameEvent _gameEvent = default;
-
     /// <summary> 初期化処理 </summary>
     public override async void Initialize(GameEvent gameEvent)
     {
         if (_movementData == null || _movementData.Count == 0) { return; }
-
-        _gameEvent = gameEvent;
 
         foreach (var movement in _movementData)
         {
@@ -48,13 +44,13 @@ public class MovementSystem : SystemBase
         await movementTask;
     }
 
-    public override void OnDestroy()
+    public override void OnDestroy(GameEvent gameEvent)
     {
         _ctsLookAt?.Cancel(); _ctsLookAt?.Dispose();
         _ctsMovement?.Cancel(); _ctsMovement?.Dispose();
 
-        _gameEvent.OnActivate -= AddData;
-        _gameEvent.OnDead -= RemoveData;
+        gameEvent.OnActivate -= AddData;
+        gameEvent.OnDead -= RemoveData;
     }
 
     private async Task LookAtAsync(CancellationToken token)

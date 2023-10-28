@@ -27,16 +27,32 @@ public class GameMain : MonoBehaviour
     private MovementSystem _movementSystem = new();
 
     private GameEvent _gameEvent = default;
+    private bool _isPause = false;
 
     private void Start()
     {
         _gameEvent = new();
 
+        _gameEvent.OnPause += Pause;
+        _gameEvent.OnResume += Resume;
+
         if (_flags.Movement) { _movementSystem.Initialize(_gameEvent); }
+    }
+
+    private void Update()
+    {
+        if (_isPause) { return; }
     }
 
     private void OnDestroy()
     {
-        if (_flags.Movement) { _movementSystem.OnDestroy(); }
+        if (_flags.Movement) { _movementSystem.OnDestroy(_gameEvent); }
+
+        _gameEvent.OnPause -= Pause;
+        _gameEvent.OnResume -= Resume;
     }
+
+    private void Pause() { _isPause = true; }
+
+    private void Resume() { _isPause = false; }
 }

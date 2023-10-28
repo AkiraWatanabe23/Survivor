@@ -5,5 +5,5 @@ public abstract class SystemBase
 
     public virtual void OnUpdate() { }
 
-    public abstract void OnDestroy();
+    public abstract void OnDestroy(GameEvent gameEvent);
 }
