@@ -10,8 +10,14 @@ public class AttackSystem : SystemBase
     [SerializeField]
     private int _defaultAttackValue = 1;
 
-    public override void Initialize(GameEvent gameEvent)
+    public override void Initialize(GameEvent gameEvent, GameState gameState)
     {
+        _attackDatas ??= new();
+        foreach (var obj in UnityEngine.Object.FindObjectsOfType<GameObject>())
+        {
+            if (obj.TryGetComponent(out AttackData attack)) { _attackDatas.Add(attack); }
+        }
+
         gameEvent.OnActivate += AddData;
         gameEvent.OnDead += RemoveData;
     }

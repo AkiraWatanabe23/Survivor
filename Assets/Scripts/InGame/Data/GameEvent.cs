@@ -5,6 +5,7 @@ using UnityEngine;
 public class GameEvent
 {
     public Func<GameObject, GameObject> OnSpawn;
+    public Action<GameObject> OnRemove;
 
     public Action<GameObject> OnActivate;
     public Action<GameObject> OnDead;

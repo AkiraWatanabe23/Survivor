@@ -6,8 +6,14 @@ public class HealthSystem : SystemBase
     [SerializeField]
     private List<HealthData> _healthDatas = default;
 
-    public override void Initialize(GameEvent gameEvent)
+    public override void Initialize(GameEvent gameEvent, GameState gameState)
     {
+        _healthDatas ??= new();
+        foreach (var obj in UnityEngine.Object.FindObjectsOfType<GameObject>())
+        {
+            if (obj.TryGetComponent(out HealthData health)) { _healthDatas.Add(health); }
+        }
+
         gameEvent.OnActivate += AddData;
         gameEvent.OnDead += RemoveData;
         gameEvent.OnHeal += Heal;

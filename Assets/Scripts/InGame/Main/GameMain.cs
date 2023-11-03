@@ -24,7 +24,11 @@ public class GameMain : MonoBehaviour
     [SerializeField]
     private SystemFlags _flags = new();
     [SerializeField]
+    private GameState _gameState = new();
+    [SerializeField]
     private MovementSystem _movementSystem = new();
+    [SerializeField]
+    private SpawnSystem _spawnSystem = new();
 
     private GameEvent _gameEvent = default;
     private bool _isPause = false;
@@ -36,20 +40,25 @@ public class GameMain : MonoBehaviour
         _gameEvent.OnPause += Pause;
         _gameEvent.OnResume += Resume;
 
-        if (_flags.Movement) { _movementSystem.Initialize(_gameEvent); }
+        if (_flags.Movement) { _movementSystem.Initialize(_gameEvent, _gameState); }
+        if (_flags.Spawn) { _spawnSystem.Initialize(_gameEvent, _gameState);}
     }
 
     private void Update()
     {
         if (_isPause) { return; }
+
+        if (_flags.Movement) { _movementSystem.OnUpdate(); }
+        if (_flags.Spawn) { _spawnSystem.OnUpdate(); }
     }
 
     private void OnDestroy()
     {
-        if (_flags.Movement) { _movementSystem.OnDestroy(_gameEvent); }
-
         _gameEvent.OnPause -= Pause;
         _gameEvent.OnResume -= Resume;
+
+        if (_flags.Movement) { _movementSystem.OnDestroy(_gameEvent); }
+        if (_flags.Spawn) { _spawnSystem.OnDestroy(_gameEvent); }
     }
 
     private void Pause() { _isPause = true; }

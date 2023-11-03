@@ -1,110 +1,99 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.AI;
 
 /// <summary> 方向転換、移動のシステム </summary>
 [Serializable]
 public class MovementSystem : SystemBase
 {
     [SerializeField]
-    private List<MovementData> _movementData = default;
+    private List<MovementData> _movementDatas = default;
 
     private InputBase _input = default;
     private Transform _player = default;
 
-    private readonly CancellationTokenSource _ctsLookAt = new();
-    private readonly CancellationTokenSource _ctsMovement = new();
-
     /// <summary> 初期化処理 </summary>
-    public override async void Initialize(GameEvent gameEvent)
+    public override void Initialize(GameEvent gameEvent, GameState gameState)
     {
-        if (_movementData == null || _movementData.Count == 0) { return; }
-
-        foreach (var movement in _movementData)
+        //シーン上のオブジェクトから移動ステータスを持っているオブジェクトを抽出
+        _movementDatas ??= new();
+        foreach (var obj in UnityEngine.Object.FindObjectsOfType<GameObject>())
         {
-            TransformSetting(movement);
+            if (obj.TryGetComponent(out MovementData movement)) { _movementDatas.Add(movement); }
+        }
+
+        foreach (var movement in _movementDatas)
+        {
+            MovementDataSetting(movement);
 
             if (_input == null && movement.gameObject.TryGetComponent(out _input))
             {
                 _player = movement.Transform;
             }
+
+            if (movement.gameObject.TryGetComponent(out CharacterData character))
+            {
+                movement.CharacterType = character.CharacterType;
+                if (movement.CharacterType == CharacterType.Enemy) //EnemyにNavMeshAgentを設定
+                {
+                    movement.Agent =
+                        movement.gameObject.TryGetComponent(out NavMeshAgent agent) ?
+                        agent : movement.gameObject.AddComponent<NavMeshAgent>();
+                }
+            }
         }
 
         gameEvent.OnActivate += AddData;
         gameEvent.OnDead += RemoveData;
+    }
 
-        Debug.Log("initialized");
-
-        var lookAtTask = LookAtAsync(_ctsLookAt.Token);
-        var movementTask = MoveAsync(_ctsMovement.Token);
-
-        await lookAtTask;
-        await movementTask;
+    public override void OnUpdate()
+    {
+        foreach (var movement in _movementDatas)
+        {
+            LookAt(movement);
+            Move(movement);
+        }
     }
 
     public override void OnDestroy(GameEvent gameEvent)
     {
-        _ctsLookAt?.Cancel(); _ctsLookAt?.Dispose();
-        _ctsMovement?.Cancel(); _ctsMovement?.Dispose();
-
         gameEvent.OnActivate -= AddData;
         gameEvent.OnDead -= RemoveData;
     }
 
-    private async Task LookAtAsync(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested) { LookAt(); await Task.Yield(); }
-    }
-
-    private async Task MoveAsync(CancellationToken token)
-    {
-        while (!token.IsCancellationRequested) { Move(); await Task.Yield(); }
-    }
-
     /// <summary> 方向転換処理 </summary>
-    private void LookAt()
+    private void LookAt(MovementData movement)
     {
-        foreach (var movement in _movementData) //移動ステータスを持つキャラクターの方向を動かす
+        if (movement.CharacterType != CharacterType.Player) { return; }
+
+        var direction = new Vector3(_input.MoveInput.x, 0f, _input.MoveInput.y);
+
+        if (direction != Vector3.zero)
         {
-            if (movement.IsGetInput)
-            {
-                var direction = new Vector3(_input.MoveInput.x, 0f, _input.MoveInput.y);
-
-                if (direction != Vector3.zero)
-                {
-                    Quaternion rot = Quaternion.LookRotation(direction);
-                    movement.Transform.rotation =
-                        Quaternion.Slerp(movement.Transform.rotation, rot, Time.deltaTime * movement.RotateSpeed);
-                }
-            }
-            else
-            {
-                var direction = (_player.position - movement.Transform.position).normalized;
-                direction.y = 0;
-
-                var lookRotation = Quaternion.LookRotation(direction * movement.RotateSpeed, Vector3.up);
-                movement.Transform.rotation = lookRotation;
-            }
+            Quaternion rot = Quaternion.LookRotation(direction);
+            movement.Transform.rotation =
+                Quaternion.Slerp(movement.Transform.rotation, rot, Time.deltaTime * movement.RotateSpeed);
         }
     }
 
     /// <summary> 移動処理 </summary>
-    private void Move()
+    private void Move(MovementData movement)
     {
-        foreach (var movement in _movementData) //移動ステータスを持つキャラクターを動かす
+        if (movement.CharacterType == CharacterType.Player) //for input
         {
-            if (movement.IsGetInput)
-            {
-                movement.Transform.position +=
-                    new Vector3(_input.MoveInput.x, 0f, _input.MoveInput.y) * movement.MoveSpeed * Time.deltaTime;
-            }
-            else
-            {
-                movement.Transform.Translate(
-                    new Vector3(0f, 0f, Time.deltaTime * movement.MoveSpeed));
-            }
+            movement.Transform.position +=
+                new Vector3(_input.MoveInput.x, 0f, _input.MoveInput.y) * movement.MoveSpeed * Time.deltaTime;
+        }
+        else if (movement.CharacterType == CharacterType.Enemy) //navmesh
+        {
+            movement.Agent.SetDestination(_player.position);
+        }
+        else
+        {
+            movement.Transform.Translate(
+                new Vector3(0f, 0f, Time.deltaTime * movement.MoveSpeed));
         }
     }
 
@@ -112,8 +101,8 @@ public class MovementSystem : SystemBase
     {
         if (go.TryGetComponent(out MovementData movement))
         {
-            _movementData.Add(movement);
-            TransformSetting(movement);
+            _movementDatas.Add(movement);
+            MovementDataSetting(movement);
         }
     }
 
@@ -121,12 +110,13 @@ public class MovementSystem : SystemBase
     {
         if (go.TryGetComponent(out MovementData movement))
         {
-            _movementData.Remove(movement);
+            _movementDatas.Remove(movement);
         }
     }
 
-    private void TransformSetting(MovementData movement)
+    private void MovementDataSetting(MovementData movement)
     {
         movement.Transform ??= movement.gameObject.transform;
+        if (movement.Agent != null) { movement.Agent.speed = movement.MoveSpeed; }
     }
 }
